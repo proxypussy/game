@@ -1,0 +1,267 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Reusable Hardened Primitives ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- Validation Blueprints ---
+    function isValidPublicProfile(data, userId) {
+      return data.keys().hasAll([
+        'uid', 'displayName', 'friendCode', 'playerClass',
+        'hairColor', 'armorColor', 'level', 'combatPower',
+        'enemiesDefeated', 'bestiaryCount', 'rarityScore',
+        'currentMapId', 'isPublic', 'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'uid', 'displayName', 'friendCode', 'playerClass',
+        'hairColor', 'armorColor', 'bio', 'level', 'combatPower',
+        'enemiesDefeated', 'bestiaryCount', 'rarityScore',
+        'currentMapId', 'isPublic', 'createdAt', 'updatedAt'
+      ])
+      && data.uid is string && data.uid == userId && isValidId(data.uid)
+      && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 24
+      && data.friendCode is string && data.friendCode.size() >= 4 && data.friendCode.size() <= 16 && data.friendCode.matches('^[A-Z0-9\\-]+$')
+      && data.playerClass in ['blade_knight', 'arcane_mage', 'shadow_ranger', 'astral_valkyrie']
+      && data.hairColor is string && data.hairColor.size() == 7 && data.hairColor.matches('^#[0-9a-fA-F]{6}$')
+      && data.armorColor is string && data.armorColor.size() == 7 && data.armorColor.matches('^#[0-9a-fA-F]{6}$')
+      && (!('bio' in data) || (data.bio is string && data.bio.size() <= 120))
+      && data.level is int && data.level >= 1 && data.level <= 9999
+      && data.combatPower is int && data.combatPower >= 0 && data.combatPower <= 1000000000
+      && data.enemiesDefeated is int && data.enemiesDefeated >= 0 && data.enemiesDefeated <= 100000000
+      && data.bestiaryCount is int && data.bestiaryCount >= 0 && data.bestiaryCount <= 150
+      && data.rarityScore is int && data.rarityScore >= 0 && data.rarityScore <= 100000000
+      && data.currentMapId is string && data.currentMapId.size() >= 1 && data.currentMapId.size() <= 32
+      && data.isPublic is bool
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidPlayerSave(data, userId) {
+      return data.keys().hasAll([
+        'uid', 'level', 'exp', 'gold', 'arcaneDust',
+        'currentMapId', 'posX', 'posY',
+        'equippedWeaponId', 'equippedArmorId', 'equippedHelmId', 'equippedAccessoryId',
+        'equippedSkills', 'inventory', 'ownedSkills', 'discoveredEnemies',
+        'enemiesDefeated', 'bossesDefeated', 'synthesesAttempted', 'synthesesSucceeded',
+        'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'uid', 'level', 'exp', 'gold', 'arcaneDust',
+        'currentMapId', 'posX', 'posY',
+        'equippedWeaponId', 'equippedArmorId', 'equippedHelmId', 'equippedAccessoryId',
+        'equippedSkills', 'inventory', 'ownedSkills', 'discoveredEnemies',
+        'enemiesDefeated', 'bossesDefeated', 'synthesesAttempted', 'synthesesSucceeded',
+        'lastDailyBonusDate', 'loginStreak', 'defenseWavesCleared',
+        'createdAt', 'updatedAt'
+      ])
+      && data.uid is string && data.uid == userId && isValidId(data.uid)
+      && data.level is int && data.level >= 1 && data.level <= 9999
+      && data.exp is int && data.exp >= 0 && data.exp <= 2000000000
+      && data.gold is int && data.gold >= 0 && data.gold <= 2000000000
+      && data.arcaneDust is int && data.arcaneDust >= 0 && data.arcaneDust <= 2000000000
+      && data.currentMapId is string && data.currentMapId.size() >= 1 && data.currentMapId.size() <= 32
+      && (data.posX is int || data.posX is float) && data.posX >= 0 && data.posX <= 10000
+      && (data.posY is int || data.posY is float) && data.posY >= 0 && data.posY <= 10000
+      && data.equippedWeaponId is string && data.equippedWeaponId.size() <= 64
+      && data.equippedArmorId is string && data.equippedArmorId.size() <= 64
+      && data.equippedHelmId is string && data.equippedHelmId.size() <= 64
+      && data.equippedAccessoryId is string && data.equippedAccessoryId.size() <= 64
+      && data.equippedSkills is list && data.equippedSkills.size() <= 6
+      && (data.equippedSkills.size() == 0 || data.equippedSkills[0] is string)
+      && data.inventory is list && data.inventory.size() <= 350
+      && (data.inventory.size() == 0 || data.inventory[0] is map)
+      && data.ownedSkills is list && data.ownedSkills.size() <= 450
+      && (data.ownedSkills.size() == 0 || data.ownedSkills[0] is map)
+      && data.discoveredEnemies is list && data.discoveredEnemies.size() <= 150
+      && (data.discoveredEnemies.size() == 0 || data.discoveredEnemies[0] is string)
+      && data.enemiesDefeated is int && data.enemiesDefeated >= 0
+      && data.bossesDefeated is int && data.bossesDefeated >= 0
+      && data.synthesesAttempted is int && data.synthesesAttempted >= 0
+      && data.synthesesSucceeded is int && data.synthesesSucceeded >= 0
+      && (!('lastDailyBonusDate' in data) || (data.lastDailyBonusDate is string && data.lastDailyBonusDate.size() <= 16))
+      && (!('loginStreak' in data) || (data.loginStreak is int && data.loginStreak >= 0 && data.loginStreak <= 100000))
+      && (!('defenseWavesCleared' in data) || (data.defenseWavesCleared is int && data.defenseWavesCleared >= 0 && data.defenseWavesCleared <= 1000000))
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidPlayerBase(data, userId) {
+      return data.keys().hasAll([
+        'ownerId', 'ownerName', 'baseName', 'isPublic',
+        'structures', 'forgeLevel', 'libraryLevel', 'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'ownerId', 'ownerName', 'baseName', 'isPublic',
+        'structures', 'forgeLevel', 'libraryLevel', 'createdAt', 'updatedAt'
+      ])
+      && data.ownerId is string && data.ownerId == userId && isValidId(data.ownerId)
+      && data.ownerName is string && data.ownerName.size() >= 1 && data.ownerName.size() <= 24
+      && data.baseName is string && data.baseName.size() >= 1 && data.baseName.size() <= 36
+      && data.isPublic is bool
+      && data.structures is list && data.structures.size() <= 150
+      && (data.structures.size() == 0 || data.structures[0] is map)
+      && data.forgeLevel is int && data.forgeLevel >= 0 && data.forgeLevel <= 20
+      && data.libraryLevel is int && data.libraryLevel >= 0 && data.libraryLevel <= 20
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidFriendship(data) {
+      return data.keys().hasAll([
+        'requesterId', 'recipientId', 'requesterName', 'recipientName',
+        'participants', 'status', 'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'requesterId', 'recipientId', 'requesterName', 'recipientName',
+        'participants', 'status', 'createdAt', 'updatedAt'
+      ])
+      && data.requesterId is string && isValidId(data.requesterId)
+      && data.recipientId is string && isValidId(data.recipientId)
+      && data.requesterId != data.recipientId
+      && data.requesterName is string && data.requesterName.size() >= 1 && data.requesterName.size() <= 24
+      && data.recipientName is string && data.recipientName.size() >= 1 && data.recipientName.size() <= 24
+      && data.participants is list && data.participants.size() == 2
+      && data.participants[0] is string && data.participants[1] is string
+      && data.requesterId in data.participants && data.recipientId in data.participants
+      && data.status in ['pending', 'accepted']
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+
+    match /publicProfiles/{userId} {
+      allow get: if isValidId(userId) && isSignedIn() && (existing().isPublic == true || existing().uid == request.auth.uid);
+      allow list: if isSignedIn() && existing().isPublic == true;
+
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidPublicProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isValidId(userId)
+        && isOwner(userId)
+        && isValidPublicProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().friendCode == existing().friendCode
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'playerClass', 'hairColor', 'armorColor', 'bio', 'isPublic', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['level', 'combatPower', 'enemiesDefeated', 'bestiaryCount', 'rarityScore', 'currentMapId', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'playerClass', 'hairColor', 'armorColor', 'bio', 'level', 'combatPower', 'enemiesDefeated', 'bestiaryCount', 'rarityScore', 'currentMapId', 'isPublic', 'updatedAt'])
+        );
+
+      allow delete: if false;
+    }
+
+    match /users/{userId}/private/{saveId} {
+      allow get: if isValidId(userId) && isValidId(saveId) && isOwner(userId);
+      allow list: if isOwner(userId) && existing().uid == request.auth.uid;
+
+      allow create: if isValidId(userId) && isValidId(saveId)
+        && isOwner(userId)
+        && isValidPlayerSave(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isValidId(userId) && isValidId(saveId)
+        && isOwner(userId)
+        && isValidPlayerSave(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'level', 'exp', 'gold', 'arcaneDust', 'currentMapId', 'posX', 'posY',
+            'equippedWeaponId', 'equippedArmorId', 'equippedHelmId', 'equippedAccessoryId',
+            'equippedSkills', 'inventory', 'ownedSkills', 'discoveredEnemies',
+            'enemiesDefeated', 'bossesDefeated', 'synthesesAttempted', 'synthesesSucceeded',
+            'lastDailyBonusDate', 'loginStreak', 'defenseWavesCleared',
+            'updatedAt'
+          ])
+        );
+
+      allow delete: if false;
+    }
+
+    match /bases/{userId} {
+      allow get: if isValidId(userId) && isSignedIn() && (existing().ownerId == request.auth.uid || existing().isPublic == true);
+      allow list: if isSignedIn() && existing().isPublic == true;
+
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidPlayerBase(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isValidId(userId)
+        && isOwner(userId)
+        && isValidPlayerBase(incoming(), userId)
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['baseName', 'ownerName', 'isPublic', 'structures', 'forgeLevel', 'libraryLevel', 'updatedAt'])
+        );
+
+      allow delete: if false;
+    }
+
+    match /friendships/{friendshipId} {
+      allow get: if isValidId(friendshipId) && isSignedIn() && request.auth.uid in existing().participants;
+      allow list: if isSignedIn() && request.auth.uid in existing().participants;
+
+      allow create: if isValidId(friendshipId)
+        && isSignedIn()
+        && isValidFriendship(incoming())
+        && incoming().requesterId == request.auth.uid
+        && incoming().status == 'pending'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/publicProfiles/$(incoming().recipientId));
+
+      allow update: if isValidId(friendshipId)
+        && isSignedIn()
+        && isValidFriendship(incoming())
+        && existing().status == 'pending'
+        && incoming().status == 'accepted'
+        && existing().recipientId == request.auth.uid
+        && incoming().requesterId == existing().requesterId
+        && incoming().recipientId == existing().recipientId
+        && incoming().participants == existing().participants
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+
+      allow delete: if isValidId(friendshipId)
+        && isSignedIn()
+        && request.auth.uid in existing().participants;
+    }
+  }
+}

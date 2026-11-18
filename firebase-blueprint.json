@@ -1,0 +1,170 @@
+{
+  "entities": {
+    "PublicProfile": {
+      "title": "PublicProfile",
+      "description": "Public non-PII player profile used for rankings, friend search, and multiplayer identity.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "friendCode": { "type": "string", "minLength": 4, "maxLength": 16, "pattern": "^[A-Z0-9\\-]+$" },
+        "playerClass": { "type": "string", "enum": ["blade_knight", "arcane_mage", "shadow_ranger", "astral_valkyrie"] },
+        "hairColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "armorColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "bio": { "type": "string", "maxLength": 120 },
+        "level": { "type": "integer" },
+        "combatPower": { "type": "integer" },
+        "enemiesDefeated": { "type": "integer" },
+        "bestiaryCount": { "type": "integer" },
+        "rarityScore": { "type": "integer" },
+        "currentMapId": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "isPublic": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "friendCode",
+        "playerClass",
+        "hairColor",
+        "armorColor",
+        "level",
+        "combatPower",
+        "enemiesDefeated",
+        "bestiaryCount",
+        "rarityScore",
+        "currentMapId",
+        "isPublic",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PlayerSave": {
+      "title": "PlayerSave",
+      "description": "Private persistent RPG character state including stats, equipment, inventory, skills, and bestiary.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "level": { "type": "integer" },
+        "exp": { "type": "integer" },
+        "gold": { "type": "integer" },
+        "arcaneDust": { "type": "integer" },
+        "currentMapId": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "posX": { "type": "number" },
+        "posY": { "type": "number" },
+        "equippedWeaponId": { "type": "string", "maxLength": 64 },
+        "equippedArmorId": { "type": "string", "maxLength": 64 },
+        "equippedHelmId": { "type": "string", "maxLength": 64 },
+        "equippedAccessoryId": { "type": "string", "maxLength": 64 },
+        "equippedSkills": { "type": "array" },
+        "inventory": { "type": "array" },
+        "ownedSkills": { "type": "array" },
+        "discoveredEnemies": { "type": "array" },
+        "enemiesDefeated": { "type": "integer" },
+        "bossesDefeated": { "type": "integer" },
+        "synthesesAttempted": { "type": "integer" },
+        "synthesesSucceeded": { "type": "integer" },
+        "lastDailyBonusDate": { "type": "string", "maxLength": 16 },
+        "loginStreak": { "type": "integer" },
+        "defenseWavesCleared": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "uid",
+        "level",
+        "exp",
+        "gold",
+        "arcaneDust",
+        "currentMapId",
+        "posX",
+        "posY",
+        "equippedWeaponId",
+        "equippedArmorId",
+        "equippedHelmId",
+        "equippedAccessoryId",
+        "equippedSkills",
+        "inventory",
+        "ownedSkills",
+        "discoveredEnemies",
+        "enemiesDefeated",
+        "bossesDefeated",
+        "synthesesAttempted",
+        "synthesesSucceeded",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PlayerBase": {
+      "title": "PlayerBase",
+      "description": "Player sanctuary base architecture layouts and fortification structures.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerName": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "baseName": { "type": "string", "minLength": 1, "maxLength": 36 },
+        "isPublic": { "type": "boolean" },
+        "structures": { "type": "array" },
+        "forgeLevel": { "type": "integer" },
+        "libraryLevel": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "ownerId",
+        "ownerName",
+        "baseName",
+        "isPublic",
+        "structures",
+        "forgeLevel",
+        "libraryLevel",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Friendship": {
+      "title": "Friendship",
+      "description": "Bidirectional friend request and accepted friendship record between two players.",
+      "type": "object",
+      "properties": {
+        "requesterId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "recipientId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "requesterName": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "recipientName": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "participants": { "type": "array" },
+        "status": { "type": "string", "enum": ["pending", "accepted"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "requesterId",
+        "recipientId",
+        "requesterName",
+        "recipientName",
+        "participants",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/publicProfiles/{userId}": {
+      "schema": { "$ref": "#/entities/PublicProfile" },
+      "description": "Public non-PII profiles for global rankings, friend lookup, and character presence."
+    },
+    "/users/{userId}/private/{saveId}": {
+      "schema": { "$ref": "#/entities/PlayerSave" },
+      "description": "Private player save documents containing inventory, skills, bestiary, and stats."
+    },
+    "/bases/{userId}": {
+      "schema": { "$ref": "#/entities/PlayerBase" },
+      "description": "Player sanctuary base architecture data readable by visitors and editable by owner."
+    },
+    "/friendships/{friendshipId}": {
+      "schema": { "$ref": "#/entities/Friendship" },
+      "description": "Friend requests and established friendships between players."
+    }
+  }
+}

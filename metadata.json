@@ -1,0 +1,6 @@
+{
+  "name": "Aetheria Chronicles",
+  "description": "10段階レアリティ・150種モンスター・400種スキル・アイテム合成・拠点建築・リアルタイムマルチプレイを備えた本格2DオープンワールドRPG。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
